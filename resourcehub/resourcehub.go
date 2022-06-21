@@ -146,6 +146,7 @@ func (h *Hub) registerQty() http.Handler {
 
 		if err := res.RegisterQty(qty); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, err)
 		}
 	}
 	return http.HandlerFunc(fn)

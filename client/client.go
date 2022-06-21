@@ -34,6 +34,13 @@ func startResource(url, resource string) error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("%s", bodyBytes)
+	}
 	defer resp.Body.Close()
 
 	return nil
@@ -45,6 +52,13 @@ func stopResource(url, resource string) error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("%s", bodyBytes)
+	}
 	defer resp.Body.Close()
 
 	return nil
@@ -55,6 +69,13 @@ func registerQty(url, resource string, qty float64) error {
 	resp, err := http.Post(urlParams, "application/json", bytes.NewReader([]byte{}))
 	if err != nil {
 		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("%s", bodyBytes)
 	}
 	defer resp.Body.Close()
 
@@ -91,11 +112,12 @@ func Run(ctx context.Context, clientid, hubaddr string, resname string) error {
 			statusTicker = time.After(time.Millisecond * 500)
 		case <-workingTicker:
 			qty := rand.Float64() * 100
-			totalRegistered += qty
-			fmt.Printf("%s (%s): Register %f\n", clientid, resname, qty)
 			err := registerQty(hubaddr, resname, qty)
 			if err != nil {
-				return err
+				fmt.Printf("%s (%s): couldn't register qty: %v\n", clientid, resname, err)
+			} else {
+				fmt.Printf("%s (%s): Register %f\n", clientid, resname, qty)
+				totalRegistered += qty
 			}
 			workingTicker = time.After(workingTimer)
 		case <-stopTicker:

@@ -3,6 +3,7 @@ package resource
 import (
 	"errors"
 	"fmt"
+	"sync"
 )
 
 var (
@@ -17,6 +18,7 @@ const (
 )
 
 type Resource struct {
+	sync.RWMutex
 	name       string
 	status     ResourceStatus
 	workingQty float64
@@ -30,6 +32,8 @@ func New(name string) *Resource {
 }
 
 func (r *Resource) Status() string {
+	r.Lock()
+	defer r.Unlock()
 	return fmt.Sprintf("Current status: %s, quantity registered: %f", r.status, r.workingQty)
 }
 
@@ -38,6 +42,8 @@ func (r *Resource) Name() string {
 }
 
 func (r *Resource) Stop() error {
+	r.Lock()
+	defer r.Unlock()
 	if r.status != ResourceStatusStopped {
 		r.status = ResourceStatusStopped
 	}
@@ -46,6 +52,8 @@ func (r *Resource) Stop() error {
 }
 
 func (r *Resource) Start() error {
+	r.Lock()
+	defer r.Unlock()
 	if r.status != ResourceStatusWorking {
 		r.status = ResourceStatusWorking
 	}
@@ -54,6 +62,8 @@ func (r *Resource) Start() error {
 }
 
 func (r *Resource) RegisterQty(t float64) error {
+	r.RLock()
+	defer r.RUnlock()
 	if r.status == ResourceStatusStopped {
 		return ErrResourceStopped
 	}
