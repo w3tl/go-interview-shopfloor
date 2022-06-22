@@ -65,7 +65,8 @@ func (h *Hub) Listen(port int) *http.Server {
 	srv := &http.Server{Addr: fmt.Sprintf(":%d", port)}
 
 	http.Handle("/status", h.status())
-	http.Handle("/start", h.start())
+	http.Handle("/startSetup", h.startSetup())
+	http.Handle("/startProcess", h.startProcess())
 	http.Handle("/stop", h.stop())
 	http.Handle("/registerQty", h.registerQty())
 
@@ -94,7 +95,7 @@ func (h *Hub) status() http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func (h *Hub) start() http.Handler {
+func (h *Hub) startSetup() http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		rname := r.URL.Query().Get("resource")
 		res := h.GetResource(rname)
@@ -103,7 +104,23 @@ func (h *Hub) start() http.Handler {
 			return
 		}
 
-		if err := res.Start(); err != nil {
+		if err := res.StartSetup(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}
+	return http.HandlerFunc(fn)
+}
+
+func (h *Hub) startProcess() http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		rname := r.URL.Query().Get("resource")
+		res := h.GetResource(rname)
+		if res == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		if err := res.StartProcess(); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}

@@ -15,9 +15,9 @@ func TestResource(t *testing.T) {
 
 		r := New("machine 1")
 
-		err := r.Start()
+		err := r.StartSetup()
 		require.NoError(t, err)
-		assert.Equal(t, ResourceStatusWorking, r.Status())
+		assert.Equal(t, ResourceStatusSetup, r.Status())
 	})
 
 	t.Run("Should start resource", func(t *testing.T) {
@@ -25,7 +25,7 @@ func TestResource(t *testing.T) {
 
 		r := New("machine 1")
 
-		err := r.Start()
+		err := r.StartSetup()
 		require.NoError(t, err)
 
 		err = r.Stop()

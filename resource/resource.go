@@ -13,7 +13,8 @@ type ResourceStatus string
 
 const (
 	ResourceStatusStopped ResourceStatus = "STOPPED"
-	ResourceStatusWorking ResourceStatus = "WORKING"
+	ResourceStatusSetup   ResourceStatus = "SETUP"
+	ResourceStatusProcess ResourceStatus = "PROCESS"
 )
 
 type Resource struct {
@@ -45,11 +46,17 @@ func (r *Resource) Stop() error {
 	return nil
 }
 
-func (r *Resource) Start() error {
-	if r.status != ResourceStatusWorking {
-		r.status = ResourceStatusWorking
+func (r *Resource) StartSetup() error {
+	if r.status == ResourceStatusStopped {
+		r.status = ResourceStatusSetup
 	}
+	return nil
+}
 
+func (r *Resource) StartProcess() error {
+	if r.status == ResourceStatusSetup {
+		r.status = ResourceStatusProcess
+	}
 	return nil
 }
 
@@ -57,8 +64,6 @@ func (r *Resource) RegisterQty(t float64) error {
 	if r.status == ResourceStatusStopped {
 		return ErrResourceStopped
 	}
-
 	r.workingQty += t
-
 	return nil
 }
