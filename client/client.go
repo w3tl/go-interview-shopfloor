@@ -28,6 +28,17 @@ func getStatus(url, resource string) (string, error) {
 	return status, nil
 }
 
+func setupResource(url, resource string) error {
+	urlParams := fmt.Sprintf("%s/setup?resource=%s", url, resource)
+	resp, err := http.Post(urlParams, "application/json", bytes.NewReader([]byte{}))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return nil
+}
+
 func startResource(url, resource string) error {
 	urlParams := fmt.Sprintf("%s/start?resource=%s", url, resource)
 	resp, err := http.Post(urlParams, "application/json", bytes.NewReader([]byte{}))
@@ -70,10 +81,18 @@ func Run(ctx context.Context, clientid, hubaddr string, resname string) error {
 			fmt.Printf("%s (%s): couldn't start resource\n", clientid, resname)
 		}
 	}()
+	go func() {
+		setupTicker := time.After(time.Millisecond * 500)
+		<-setupTicker
+		err := setupResource(hubaddr, resname)
+		if err != nil {
+			fmt.Printf("%s (%s): couldn't setup resource\n", clientid, resname)
+		}
+	}()
 
 	statusTicker := time.After(time.Millisecond * 1000)
-	workingTimer := time.Duration(rand.Intn(2000)+500) * time.Millisecond
-	workingTicker := time.After(workingTimer)
+	processTimer := time.Duration(rand.Intn(2000)+500) * time.Millisecond
+	processTicker := time.After(processTimer)
 	stopTicker := time.After(time.Second * 3)
 
 	var totalRegistered float64
@@ -81,6 +100,7 @@ func Run(ctx context.Context, clientid, hubaddr string, resname string) error {
 	for {
 
 		select {
+
 		case <-statusTicker:
 			status, err := getStatus(hubaddr, resname)
 			if err != nil {
@@ -89,7 +109,7 @@ func Run(ctx context.Context, clientid, hubaddr string, resname string) error {
 				fmt.Printf("%s (%s): %s\n", clientid, resname, status)
 			}
 			statusTicker = time.After(time.Millisecond * 500)
-		case <-workingTicker:
+		case <-processTicker:
 			qty := rand.Float64() * 100
 			totalRegistered += qty
 			fmt.Printf("%s (%s): Register %f\n", clientid, resname, qty)
@@ -97,7 +117,7 @@ func Run(ctx context.Context, clientid, hubaddr string, resname string) error {
 			if err != nil {
 				return err
 			}
-			workingTicker = time.After(workingTimer)
+			processTicker = time.After(processTimer)
 		case <-stopTicker:
 			fmt.Printf("%s (%s): Totally registered %f\n", clientid, resname, totalRegistered)
 			err := stopResource(hubaddr, resname)

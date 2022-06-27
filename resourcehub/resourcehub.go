@@ -67,6 +67,8 @@ func (h *Hub) Listen(port int) *http.Server {
 	http.Handle("/status", h.status())
 	http.Handle("/start", h.start())
 	http.Handle("/stop", h.stop())
+	http.Handle("/setup", h.setup())
+	http.Handle("/process", h.process())
 	http.Handle("/registerQty", h.registerQty())
 
 	go func() {
@@ -110,6 +112,37 @@ func (h *Hub) start() http.Handler {
 	return http.HandlerFunc(fn)
 }
 
+func (h *Hub) setup() http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		rname := r.URL.Query().Get("resource")
+		res := h.GetResource(rname)
+		if res == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		if err := res.Setup(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}
+	return http.HandlerFunc(fn)
+}
+func (h *Hub) process() http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		rname := r.URL.Query().Get("resource")
+		res := h.GetResource(rname)
+		if res == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		if err := res.Process(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}
+	return http.HandlerFunc(fn)
+}
+
 func (h *Hub) stop() http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		rname := r.URL.Query().Get("resource")
@@ -144,7 +177,7 @@ func (h *Hub) registerQty() http.Handler {
 
 		time.Sleep(time.Duration(rand.Intn(1000)))
 
-		if err := res.RegisterQty(qty); err != nil {
+		if err := res.SetupQty(qty); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}
